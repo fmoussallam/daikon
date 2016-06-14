@@ -12,10 +12,7 @@
 // ============================================================================
 package org.talend.daikon.exception;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -73,6 +70,84 @@ public class TalendRuntimeExceptionTest {
             assertTrue(ex instanceof TalendRuntimeException);
             assertEquals("test exception", ((TalendRuntimeException) ex).getCause().getMessage());
             assertEquals(CommonErrorCodes.UNEXPECTED_EXCEPTION, ((TalendRuntimeException) ex).getCode());
+        }
+    }
+
+    @Test
+    public void testExceptionBuilder() {
+        TalendRuntimeException talendRuntimeException = TalendRuntimeException.build(CommonErrorCodes.UNEXPECTED_EXCEPTION)
+                .create();
+        assertEquals(CommonErrorCodes.UNEXPECTED_EXCEPTION, talendRuntimeException.getCode());
+    }
+
+    @Test
+    public void testExceptionBuilderWithSetParams() {
+        TalendRuntimeException talendRuntimeException = TalendRuntimeException.build(CommonErrorCodes.UNEXPECTED_ARGUMENT)
+                .set("foo", "bar");
+        assertEquals(CommonErrorCodes.UNEXPECTED_ARGUMENT, talendRuntimeException.getCode());
+        assertEquals("foo", talendRuntimeException.getContext().get("argument"));
+        assertEquals("bar", talendRuntimeException.getContext().get("value"));
+    }
+
+    @Test
+    public void testExceptionBuilderWithSetWrongParams() {
+        // fewer param
+        TalendRuntimeException talendRuntimeException = TalendRuntimeException.build(CommonErrorCodes.UNEXPECTED_ARGUMENT)
+                .set("foo");
+        assertEquals(CommonErrorCodes.UNEXPECTED_ARGUMENT, talendRuntimeException.getCode());
+        assertEquals("foo", talendRuntimeException.getContext().get("argument"));
+        assertEquals(null, talendRuntimeException.getContext().get("value"));
+        // more param
+        talendRuntimeException = TalendRuntimeException.build(CommonErrorCodes.UNEXPECTED_ARGUMENT).set("foo", "bar", "xx");
+        assertEquals(CommonErrorCodes.UNEXPECTED_ARGUMENT, talendRuntimeException.getCode());
+        assertEquals("foo", talendRuntimeException.getContext().get("argument"));
+        assertEquals("bar", talendRuntimeException.getContext().get("value"));
+    }
+
+    @Test
+    public void testExceptionBuilderWithPutParams() {
+        TalendRuntimeException talendRuntimeException = TalendRuntimeException.build(CommonErrorCodes.UNEXPECTED_ARGUMENT)
+                .put("argument", "foo").put("value", "bar").create();
+        assertEquals(CommonErrorCodes.UNEXPECTED_ARGUMENT, talendRuntimeException.getCode());
+        assertEquals("foo", talendRuntimeException.getContext().get("argument"));
+        assertEquals("bar", talendRuntimeException.getContext().get("value"));
+    }
+
+    @Test
+    public void testExceptionBuilderWithPutWrongParams() {
+        // fewer param
+        TalendRuntimeException talendRuntimeException = TalendRuntimeException.build(CommonErrorCodes.UNEXPECTED_ARGUMENT)
+                .put("argument", "foo").create();
+        assertEquals(CommonErrorCodes.UNEXPECTED_ARGUMENT, talendRuntimeException.getCode());
+        assertEquals("foo", talendRuntimeException.getContext().get("argument"));
+        assertEquals(null, talendRuntimeException.getContext().get("value"));
+        // more params
+        talendRuntimeException = TalendRuntimeException.build(CommonErrorCodes.UNEXPECTED_ARGUMENT).put("argument", "foo")
+                .put("value", "bar").put("unknow", "xx").create();
+        assertEquals(CommonErrorCodes.UNEXPECTED_ARGUMENT, talendRuntimeException.getCode());
+        assertEquals("foo", talendRuntimeException.getContext().get("argument"));
+        assertEquals("bar", talendRuntimeException.getContext().get("value"));
+        assertEquals(null, talendRuntimeException.getContext().get("unknow"));
+    }
+
+    @Test
+    public void testExceptionBuilderThrow() {
+        try {
+            TalendRuntimeException.build(CommonErrorCodes.UNEXPECTED_ARGUMENT).put("argument", "foo").throwIt();
+            fail("exception should be ");
+        } catch (TalendRuntimeException e) {
+            // fine we have caught it
+            assertEquals(CommonErrorCodes.UNEXPECTED_ARGUMENT, e.getCode());
+            assertEquals("foo", e.getContext().get("argument"));
+        }
+        try {
+            TalendRuntimeException.build(CommonErrorCodes.UNEXPECTED_ARGUMENT).setAndThrow("foo", "bar");
+            fail("exception should be ");
+        } catch (TalendRuntimeException e) {
+            // fine we have caught it
+            assertEquals(CommonErrorCodes.UNEXPECTED_ARGUMENT, e.getCode());
+            assertEquals("foo", e.getContext().get("argument"));
+            assertEquals("bar", e.getContext().get("value"));
         }
     }
 

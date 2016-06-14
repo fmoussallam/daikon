@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.talend.daikon.exception.ExceptionContext.ExceptionContextBuilder;
 import org.talend.daikon.exception.error.CommonErrorCodes;
 import org.talend.daikon.exception.error.ErrorCode;
 import org.talend.daikon.exception.json.JsonErrorCode;
@@ -187,5 +188,68 @@ public class TalendRuntimeException extends RuntimeException {
      */
     public ExceptionContext getContext() {
         return context;
+    }
+
+    public static TalendRuntimeExceptionBuilder build(ErrorCode code) {
+        return new TalendRuntimeExceptionBuilder(code);
+    }
+
+    public static class TalendRuntimeExceptionBuilder {
+
+        ExceptionContextBuilder ecb = ExceptionContext.withBuilder();
+
+        private ErrorCode errorCode;
+
+        TalendRuntimeExceptionBuilder(ErrorCode errorCode) {
+            this.errorCode = errorCode;
+        }
+
+        /**
+         * add new key,value to the context of the exception that will be created
+         */
+        public TalendRuntimeExceptionBuilder put(String key, String value) {
+            if (ecb.getContextSize() != errorCode.getExpectedContextEntries().size()) {
+                ecb.put(key, value);
+            } // or else context is already set so ingor this
+            return this;
+        }
+
+        /**
+         * add values to the context of the exception that will be created in the order of the context
+         * keys, shall be used only once instead of put if want to set all values at once.
+         * This will return a final TalendRuntimeException as no more context can be set.
+         * 
+         * @param values all ordered value to set. never null.
+         */
+        public TalendRuntimeException set(String... values) {
+            String[] expectedContextEntries = errorCode.getExpectedContextEntries()
+                    .toArray(new String[errorCode.getExpectedContextEntries().size()]);
+
+            for (int i = 0; (i < expectedContextEntries.length) && (i < values.length); i++) {
+                put(expectedContextEntries[i], values[i]);
+            }
+            return create();
+        }
+
+        /**
+         * same as {@link #set(String...)} and throws the exception as well instead of returning it
+         */
+        public void setAndThrow(String... values) {
+            throw set(values);
+        }
+
+        /**
+         * same as {@link #create()} but also throws it
+         */
+        public void throwIt() {
+            throw create();
+        }
+
+        /**
+         * creates the exception with the previously set context
+         */
+        public TalendRuntimeException create() {
+            return new TalendRuntimeException(errorCode, ecb.build());
+        }
     }
 }

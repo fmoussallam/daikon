@@ -13,8 +13,10 @@
 package org.talend.daikon.exception;
 
 import java.io.Serializable;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+
+import org.talend.daikon.exception.TalendRuntimeException.TalendRuntimeExceptionBuilder;
 
 /**
  * Additional context for {@link TalendRuntimeException}s when they occur, in the form of key/value pairs.
@@ -23,14 +25,17 @@ public class ExceptionContext implements Serializable {
 
     private static final long serialVersionUID = -8905451634883948364L;
 
-    /** The internal context. */
-    private Map<String, Object> context;
+    /**
+     * The internal context. is a LinkedHashMap to garanty the order of the context entries to help the exception builder. see
+     * {@link TalendRuntimeExceptionBuilder#set(String...)}
+     */
+    private LinkedHashMap<String, Object> context;
 
     /**
      * private constructor to ensure the build method use.
      */
     private ExceptionContext() {
-        context = new HashMap<>();
+        context = new LinkedHashMap<>();
     }
 
     /**
@@ -94,6 +99,14 @@ public class ExceptionContext implements Serializable {
         return context.containsKey(key);
     }
 
+    /**
+     * @param key the key to get the associated value .
+     * @return value associated with the given key.
+     */
+    public Object get(String key) {
+        return context.get(key);
+    }
+
     public ExceptionContext from(Map<String, Object> context) {
         if (context != null) {
             this.context.putAll(context);
@@ -112,7 +125,7 @@ public class ExceptionContext implements Serializable {
      */
     public static class ExceptionContextBuilder {
 
-        private Map<String, Object> context = new HashMap<>();
+        private LinkedHashMap<String, Object> context = new LinkedHashMap<>();
 
         /**
          * Adds a new key / value pair in the context
@@ -131,6 +144,10 @@ public class ExceptionContext implements Serializable {
          */
         public ExceptionContext build() {
             return new ExceptionContext(this);
+        }
+
+        public int getContextSize() {
+            return context.size();
         }
     }
 
